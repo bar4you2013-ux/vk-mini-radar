@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>VK Radar API Test</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>VK Radar</h1>
+    <div class="subtitle">API TEST</div>
+
+    <div class="status">
+        <div id="bridgeStatus">⚪ VK Bridge</div>
+        <div id="userStatus">⚪ Пользователь</div>
+        <div id="tokenStatus">⚪ Авторизация</div>
+        <div id="postStatus">⚪ Shop-пост</div>
+        <div id="viewsStatus">⚪ Views</div>
+        <div id="wallStatus">⚪ wall.getById</div>
+        <div id="searchStatus">⚪ Discovery</div>
+    </div>
+
+    <button id="startButton">
+        ЗАПУСТИТЬ ВСЕ ТЕСТЫ
+    </button>
+
+    <button id="copyButton">
+        СКОПИРОВАТЬ РЕЗУЛЬТАТ
+    </button>
+
+    <h2>Отчёт</h2>
+
+    <pre id="log"></pre>
+
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>
