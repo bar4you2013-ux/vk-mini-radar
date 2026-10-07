@@ -1,4 +1,4 @@
-const APP_ID = 54808561;
+const APP_ID = 54810589;
 
 // Известный нам Shop-пост
 const TEST_OWNER = -240613485;
