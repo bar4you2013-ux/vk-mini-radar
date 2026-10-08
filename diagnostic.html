@@ -1,0 +1,173 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VK Radar Diagnostics</title>
+  <style>
+    body {
+      background: #111827;
+      color: #f9fafb;
+      font: 16px Arial, sans-serif;
+      margin: 0;
+      padding: 24px;
+    }
+    main { max-width: 760px; margin: auto; }
+    h1 { font-size: 24px; }
+    .item {
+      padding: 12px;
+      background: #1f2937;
+      border-radius: 8px;
+      margin: 10px 0;
+      overflow-wrap: anywhere;
+    }
+    .ok { color: #4ade80; }
+    .bad { color: #f87171; }
+    .warn { color: #fbbf24; }
+    button {
+      padding: 12px 18px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 8px 8px 8px 0;
+    }
+    pre {
+      background: #030712;
+      padding: 14px;
+      border-radius: 8px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>VK Radar — диагностика</h1>
+
+  <div class="item" id="environment">Проверка окружения...</div>
+  <div class="item" id="bridge">Проверка VK Bridge...</div>
+  <div class="item" id="init">Инициализация ещё не выполнялась</div>
+
+  <button id="test">Проверить VK Bridge</button>
+  <button id="copy">Скопировать отчёт</button>
+
+  <h3>Журнал</h3>
+  <pre id="log"></pre>
+</main>
+
+<script>
+const logElement = document.getElementById("log");
+const report = [];
+
+function log(message) {
+  report.push(message);
+  logElement.textContent = report.join("\n");
+}
+
+function setStatus(id, text, cls) {
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.className = "item " + cls;
+}
+
+function safeError(error) {
+  const obj = {
+    message: String(error?.message || error || "Unknown error"),
+    error_type: error?.error_type || null,
+    error_code: error?.error_code || null
+  };
+  return JSON.stringify(obj);
+}
+
+const params = new URLSearchParams(location.search);
+const vkAppId = params.get("vk_app_id");
+const vkPlatform = params.get("vk_platform");
+
+const insideFrame = window.self !== window.top;
+
+setStatus(
+  "environment",
+  "Iframe: " + insideFrame +
+  " | VK App ID: " + (vkAppId || "нет") +
+  " | Platform: " + (vkPlatform || "нет"),
+  vkAppId ? "ok" : "warn"
+);
+
+log("Страница диагностики загружена");
+log("Iframe: " + insideFrame);
+log("VK App ID: " + (vkAppId || "нет"));
+log("Platform: " + (vkPlatform || "нет"));
+
+window.addEventListener("error", event => {
+  log("JS ERROR: " + event.message);
+});
+
+window.addEventListener("unhandledrejection", event => {
+  log("PROMISE ERROR: " + safeError(event.reason));
+});
+
+const script = document.createElement("script");
+script.src = "https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js";
+
+script.onload = () => {
+  const available = !!window.vkBridge;
+
+  setStatus(
+    "bridge",
+    available
+      ? "VK Bridge: библиотека загружена"
+      : "VK Bridge: объект не найден",
+    available ? "ok" : "bad"
+  );
+
+  log("VK Bridge loaded: " + available);
+};
+
+script.onerror = () => {
+  setStatus("bridge", "Ошибка загрузки VK Bridge", "bad");
+  log("Не удалось загрузить библиотеку VK Bridge");
+};
+
+document.head.appendChild(script);
+
+document.getElementById("test").onclick = async () => {
+  if (!window.vkBridge) {
+    log("VK Bridge отсутствует");
+    return;
+  }
+
+  setStatus("init", "Выполняется VKWebAppInit...", "warn");
+  log("Запуск VKWebAppInit");
+
+  try {
+    const result = await Promise.race([
+      window.vkBridge.send("VKWebAppInit"),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Timeout 10 секунд")), 10000)
+      )
+    ]);
+
+    setStatus("init", "VKWebAppInit: успешно", "ok");
+    log("VKWebAppInit OK: " + JSON.stringify(result));
+  } catch (error) {
+    setStatus("init", "VKWebAppInit: ошибка", "bad");
+    log("VKWebAppInit ERROR: " + safeError(error));
+  }
+};
+
+document.getElementById("copy").onclick = async () => {
+  const output = report.join("\n");
+
+  try {
+    await navigator.clipboard.writeText(output);
+    log("Отчёт скопирован");
+  } catch {
+    log("Не удалось скопировать автоматически");
+  }
+};
+</script>
+</body>
+</html>
